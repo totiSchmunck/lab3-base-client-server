@@ -1,4 +1,4 @@
-// gcc server.c -Wall
+// gcc  -o server server.c -ggdb -Wall
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,6 +13,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/un.h>
+// select => 
+#include <sys/time.h>
+#include <sys/select.h>
 
 
 #define PORT 3456
@@ -22,7 +25,7 @@ int tcp_socket_server, udp_socket_server, unix_socket_server, maxfd;
 fd_set readset, tempset;
 
 void logger(const char *text) {
-  printf("%s", text);
+  printf("%s\n", text);
 }
 
 
@@ -148,9 +151,9 @@ void stop_unix_socket_server(){
 
 int accept_new_clients(int socket){
   logger("New client in queue");
-  sockaddr_in addr;
+  struct sockaddr_in addr;
   int len = sizeof(addr);
-  int result = accept(socket, (sockaddr *)&addr, (socklen_t*)&len);
+  int result = accept(socket, (struct sockaddr *)&addr, (socklen_t*)&len);
   if (result == -1) { 
     // These are not errors according to the manpage.
     if ((errno == ENETDOWN || errno == EPROTO || errno == ENOPROTOOPT || errno == EHOSTDOWN || errno == ENONET || errno == EHOSTUNREACH || errno == EOPNOTSUPP || errno == ENETUNREACH))
@@ -177,9 +180,8 @@ void read_message(){
 }
 
 void listen_and_accept_new_clients(){
-  int maxfd, flags;
-  int srvsock, peersoc, j, result, result1, sent;
-  timeval tv;
+  int j, result;
+  struct timeval tv;
 
   FD_ZERO(&readset);
   FD_SET(tcp_socket_server, &readset);
@@ -210,10 +212,10 @@ void listen_and_accept_new_clients(){
         }
 
         for (j=0; j<maxfd+1; j++) {
-           if (FD_ISSET(j, &tempset)) {
-             read_message();
-             FD_CLR(j, &tempset);
-           }      // end if (FD_ISSET(j, &tempset))
+          if (FD_ISSET(j, &tempset)) {
+            read_message();
+            FD_CLR(j, &tempset);
+          }      // end if (FD_ISSET(j, &tempset))
         }      // end for (j=0;...)
      }      // end else if (result > 0)
   } while (1);
@@ -229,6 +231,7 @@ void stop_main(){
 
 // main function
 int main(int argc, char *argv[]) {
+  logger("Loading server.....");
 
   if (start_tcp_server() && start_udp_server() && start_unix_socket_server()) {
     logger("Server started successfully");
