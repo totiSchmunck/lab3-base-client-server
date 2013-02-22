@@ -11,16 +11,18 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <sys/un.h>
 
 
 #define PORT 3456
+#define UNIX_SOCK_PATH "/tmp/lab3.sock"
 
 int tcp_socket_server;
 int udp_socket_server;
 int unix_socket_server;
 
 
-void logger(char *text) {
+void logger(const char *text) {
   printf("%s", text);
 }
 
@@ -75,30 +77,64 @@ int start_tcp_server(){
 
 int start_udp_server(){
   logger("starting UDP server");
-  udp_socket_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP);
+  udp_socket_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (udp_socket_server < 0) {
-    perror("TCP socket");
+    perror("UDP socket");
     return 0;
   }
+
+  struct sockaddr_in address;
+  address.sin_family = AF_INET;
+  address.sin_addr.s_addr = INADDR_ANY;
+  address.sin_port = htons(PORT);
+
+  // Bind socket to the appropriate port and interface (INADDR_ANY)
+  if ( bind( udp_socket_server, (struct sockaddr *)&address, sizeof(address) ) < 0 ) {
+    perror("UDP bind");
+    return 0;
+  }
+
   logger("UDP server started");
   return 1;
 }
 
 int start_unix_socket_server(){
   logger("starting Unix server");
+  unix_socket_server = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (unix_socket_server < 0) {
+    perror("UDP socket");
+    return 0;
+  }
+
+  struct sockaddr_un local;
+  local.sun_family = AF_UNIX;
+  strcpy(local.sun_path, UNIX_SOCK_PATH);
+  unlink(local.sun_path);
+  size_t len = strlen(local.sun_path) + sizeof(local.sun_family);
+
+  // Bind socket to the appropriate port and interface (INADDR_ANY)
+  if ( bind( unix_socket_server, (struct sockaddr *)&local, len ) < 0 ) {
+    perror("Unix bind");
+    return 0;
+  }
+
   logger("Unix server started");
   return 1;
 }
 
 void stop_tcp_server(){
   close(tcp_socket_server);
+  logger("TCP server stopped");
 }
 
 void stop_udp_server(){
+  close(udp_socket_server);
+  logger("UDP server stopped");
 }
 
 void stop_unix_socket_server(){
-
+  close(unix_socket_server);
+  logger("Unix server stopped");
 }
 
 void accept_new_clients(){
@@ -117,8 +153,15 @@ void accept_new_clients(){
 
 void listen_and_accept_new_clients(){
   //accept_new_clients();
+  //read udp recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
+
+void stop_main(){
+  stop_tcp_server();
+  stop_udp_server();
+  stop_unix_socket_server();  
+}
 
 // main function
 int main(int argc, char *argv[]) {
@@ -126,13 +169,11 @@ int main(int argc, char *argv[]) {
   if (start_tcp_server() && start_udp_server() && start_unix_socket_server()) {
     logger("Server started successfully");
   } else {
-    stop_tcp_server();
-    stop_udp_server();
-    stop_unix_socket_server();
+    stop_main();
     return EXIT_FAILURE;
   }
 
   listen_and_accept_new_clients();
-
+  stop_main();
   return EXIT_SUCCESS;
 }
