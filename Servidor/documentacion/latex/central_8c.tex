@@ -1,0 +1,331 @@
+\hypertarget{central_8c}{
+\section{central.c File Reference}
+\label{central_8c}\index{central.c@{central.c}}
+}
+{\ttfamily \#include $<$stdlib.h$>$}\par
+{\ttfamily \#include $<$stdio.h$>$}\par
+{\ttfamily \#include $<$unistd.h$>$}\par
+{\ttfamily \#include $<$errno.h$>$}\par
+{\ttfamily \#include $<$sys/types.h$>$}\par
+{\ttfamily \#include $<$sys/socket.h$>$}\par
+{\ttfamily \#include $<$arpa/inet.h$>$}\par
+{\ttfamily \#include $<$netdb.h$>$}\par
+{\ttfamily \#include $<$fcntl.h$>$}\par
+{\ttfamily \#include $<$netinet/in.h$>$}\par
+{\ttfamily \#include $<$netinet/tcp.h$>$}\par
+{\ttfamily \#include $<$sys/un.h$>$}\par
+{\ttfamily \#include $<$sys/time.h$>$}\par
+{\ttfamily \#include $<$sys/select.h$>$}\par
+{\ttfamily \#include $<$pthread.h$>$}\par
+{\ttfamily \#include \char`\"{}logger.h\char`\"{}}\par
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structargumentos_thread}{argumentosThread}
+\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{central_8c_a614217d263be1fb1a5f76e2ff7be19a2}{PORT}~3456
+\begin{DoxyCompactList}\small\item\em Modo de uso: gcc -\/o server server.c -\/ggdb -\/Wall. \end{DoxyCompactList}\item 
+\#define \hyperlink{central_8c_a1c942065e3284cc1edcb07687c914c2a}{UNIX\_\-SOCK\_\-PATH}~\char`\"{}/tmp/lab3.sock\char`\"{}
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \hyperlink{structargumentos_thread}{argumentosThread} \hyperlink{central_8c_ab67e654a795de6340ae5971573b588ce}{strarg}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void $\ast$ \hyperlink{central_8c_abf89b3fff276c57e2ca146ec2d3eeef4}{atenderPeticion} (void $\ast$argumentos)
+\item 
+void \hyperlink{central_8c_a0307f0e1415585397755817b590f6ab2}{lanzarThread} (int \hyperlink{central_8c_abb5b36d13adc46653941914ff9a4d000}{udp\_\-socket\_\-server})
+\item 
+int \hyperlink{central_8c_a0a046ba5b216c856f5f92de998340103}{start\_\-tcp\_\-server} ()
+\begin{DoxyCompactList}\small\item\em Crea el socket, Configura las opciones, enlaza el puerto a la interface y pone el socket a la escucha de conexiones entrantes. \end{DoxyCompactList}\item 
+int \hyperlink{central_8c_a88c007c511cdb4664659ac6c53665494}{start\_\-udp\_\-server} ()
+\begin{DoxyCompactList}\small\item\em mirar la funcion \end{DoxyCompactList}\item 
+int \hyperlink{central_8c_aabb4fe2b5cb12bd1d426c177e27d79a6}{start\_\-unix\_\-socket\_\-server} ()
+\begin{DoxyCompactList}\small\item\em mirar la funcion \end{DoxyCompactList}\item 
+void \hyperlink{central_8c_a77f57e5f7542e39288f1144669a9fef2}{stop\_\-tcp\_\-server} ()
+\begin{DoxyCompactList}\small\item\em Libera los recursos del socket. \end{DoxyCompactList}\item 
+void \hyperlink{central_8c_ad2b586e5390610ce7a5b64f6d8bd02ae}{stop\_\-udp\_\-server} ()
+\begin{DoxyCompactList}\small\item\em mirar la funcion \end{DoxyCompactList}\item 
+void \hyperlink{central_8c_a7157e54905c6453ba2b617276834a4e6}{stop\_\-unix\_\-socket\_\-server} ()
+\begin{DoxyCompactList}\small\item\em mirar la funcion \end{DoxyCompactList}\item 
+int \hyperlink{central_8c_afcacb4da350a3be2f894bb1a9a5e57f9}{accept\_\-new\_\-clients} (int socket)
+\begin{DoxyCompactList}\small\item\em Acepta un nuevo cliente para el socket especificado por parametro. \end{DoxyCompactList}\item 
+void \hyperlink{central_8c_ae6b10218605a0bd630b0c57b7267a154}{read\_\-udp\_\-message} ()
+\item 
+void \hyperlink{central_8c_aeb4e118664a04edaa85a8ca8993e38fa}{read\_\-message} ()
+\item 
+void \hyperlink{central_8c_ac36946133d2fd71b7d8ff4252abada5d}{listen\_\-and\_\-accept\_\-new\_\-clients} ()
+\item 
+void \hyperlink{central_8c_acac87c02c3b8744df11c58335c418849}{stop\_\-main} ()
+\item 
+int \hyperlink{central_8c_a0ddf1224851353fc92bfbff6f499fa97}{main} (int argc, char $\ast$argv\mbox{[}$\,$\mbox{]})
+\item 
+void $\ast$ \hyperlink{central_8c_a47ee57f7715f46991980f78cee866dc2}{atenderPeticionUDP} (void $\ast$argumentos)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{central_8c_a6865ec8ec3717be1b31fab06f7bb6978}{tcp\_\-socket\_\-server}
+\item 
+int \hyperlink{central_8c_abb5b36d13adc46653941914ff9a4d000}{udp\_\-socket\_\-server}
+\item 
+int \hyperlink{central_8c_a78b47c505d6cde92c3c16d4e4df51158}{unix\_\-socket\_\-server}
+\item 
+int \hyperlink{central_8c_a7a13a361801dcc59ce4946736fa26726}{maxfd}
+\begin{DoxyCompactList}\small\item\em Descriptores tanto para TCP, UDP y Unix. \end{DoxyCompactList}\item 
+fd\_\-set \hyperlink{central_8c_af592d9cc891cbe8fb7090f153802e584}{readset}
+\item 
+fd\_\-set \hyperlink{central_8c_a5b40dc3290320de1c4aa021941ddc321}{tempset}
+\end{DoxyCompactItemize}
+
+
+\subsection{Define Documentation}
+\hypertarget{central_8c_a614217d263be1fb1a5f76e2ff7be19a2}{
+\index{central.c@{central.c}!PORT@{PORT}}
+\index{PORT@{PORT}!central.c@{central.c}}
+\subsubsection[{PORT}]{\setlength{\rightskip}{0pt plus 5cm}\#define PORT~3456}}
+\label{central_8c_a614217d263be1fb1a5f76e2ff7be19a2}
+
+
+Modo de uso: gcc -\/o server server.c -\/ggdb -\/Wall. 
+
+sockets =$>$ select =$>$ threads \hypertarget{central_8c_a1c942065e3284cc1edcb07687c914c2a}{
+\index{central.c@{central.c}!UNIX\_\-SOCK\_\-PATH@{UNIX\_\-SOCK\_\-PATH}}
+\index{UNIX\_\-SOCK\_\-PATH@{UNIX\_\-SOCK\_\-PATH}!central.c@{central.c}}
+\subsubsection[{UNIX\_\-SOCK\_\-PATH}]{\setlength{\rightskip}{0pt plus 5cm}\#define UNIX\_\-SOCK\_\-PATH~\char`\"{}/tmp/lab3.sock\char`\"{}}}
+\label{central_8c_a1c942065e3284cc1edcb07687c914c2a}
+
+
+\subsection{Typedef Documentation}
+\hypertarget{central_8c_ab67e654a795de6340ae5971573b588ce}{
+\index{central.c@{central.c}!strarg@{strarg}}
+\index{strarg@{strarg}!central.c@{central.c}}
+\subsubsection[{strarg}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf argumentosThread} {\bf strarg}}}
+\label{central_8c_ab67e654a795de6340ae5971573b588ce}
+
+
+\subsection{Function Documentation}
+\hypertarget{central_8c_afcacb4da350a3be2f894bb1a9a5e57f9}{
+\index{central.c@{central.c}!accept\_\-new\_\-clients@{accept\_\-new\_\-clients}}
+\index{accept\_\-new\_\-clients@{accept\_\-new\_\-clients}!central.c@{central.c}}
+\subsubsection[{accept\_\-new\_\-clients}]{\setlength{\rightskip}{0pt plus 5cm}int accept\_\-new\_\-clients (
+\begin{DoxyParamCaption}
+\item[{int}]{socket}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_afcacb4da350a3be2f894bb1a9a5e57f9}
+
+
+Acepta un nuevo cliente para el socket especificado por parametro. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em socket} & descriptor de cualquier tipo de socket. \\
+\hline
+\end{DoxyParams}
+\hypertarget{central_8c_abf89b3fff276c57e2ca146ec2d3eeef4}{
+\index{central.c@{central.c}!atenderPeticion@{atenderPeticion}}
+\index{atenderPeticion@{atenderPeticion}!central.c@{central.c}}
+\subsubsection[{atenderPeticion}]{\setlength{\rightskip}{0pt plus 5cm}void $\ast$ atenderPeticion (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argumentos}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_abf89b3fff276c57e2ca146ec2d3eeef4}
+\hypertarget{central_8c_a47ee57f7715f46991980f78cee866dc2}{
+\index{central.c@{central.c}!atenderPeticionUDP@{atenderPeticionUDP}}
+\index{atenderPeticionUDP@{atenderPeticionUDP}!central.c@{central.c}}
+\subsubsection[{atenderPeticionUDP}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ atenderPeticionUDP (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{argumentos}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a47ee57f7715f46991980f78cee866dc2}
+\hypertarget{central_8c_a0307f0e1415585397755817b590f6ab2}{
+\index{central.c@{central.c}!lanzarThread@{lanzarThread}}
+\index{lanzarThread@{lanzarThread}!central.c@{central.c}}
+\subsubsection[{lanzarThread}]{\setlength{\rightskip}{0pt plus 5cm}void lanzarThread (
+\begin{DoxyParamCaption}
+\item[{int}]{udp\_\-socket\_\-server}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a0307f0e1415585397755817b590f6ab2}
+\hypertarget{central_8c_ac36946133d2fd71b7d8ff4252abada5d}{
+\index{central.c@{central.c}!listen\_\-and\_\-accept\_\-new\_\-clients@{listen\_\-and\_\-accept\_\-new\_\-clients}}
+\index{listen\_\-and\_\-accept\_\-new\_\-clients@{listen\_\-and\_\-accept\_\-new\_\-clients}!central.c@{central.c}}
+\subsubsection[{listen\_\-and\_\-accept\_\-new\_\-clients}]{\setlength{\rightskip}{0pt plus 5cm}void listen\_\-and\_\-accept\_\-new\_\-clients (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_ac36946133d2fd71b7d8ff4252abada5d}
+\hypertarget{central_8c_a0ddf1224851353fc92bfbff6f499fa97}{
+\index{central.c@{central.c}!main@{main}}
+\index{main@{main}!central.c@{central.c}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+\item[{int}]{argc, }
+\item[{char $\ast$}]{argv\mbox{[}$\,$\mbox{]}}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a0ddf1224851353fc92bfbff6f499fa97}
+\hypertarget{central_8c_aeb4e118664a04edaa85a8ca8993e38fa}{
+\index{central.c@{central.c}!read\_\-message@{read\_\-message}}
+\index{read\_\-message@{read\_\-message}!central.c@{central.c}}
+\subsubsection[{read\_\-message}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-message (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_aeb4e118664a04edaa85a8ca8993e38fa}
+\hypertarget{central_8c_ae6b10218605a0bd630b0c57b7267a154}{
+\index{central.c@{central.c}!read\_\-udp\_\-message@{read\_\-udp\_\-message}}
+\index{read\_\-udp\_\-message@{read\_\-udp\_\-message}!central.c@{central.c}}
+\subsubsection[{read\_\-udp\_\-message}]{\setlength{\rightskip}{0pt plus 5cm}void read\_\-udp\_\-message (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_ae6b10218605a0bd630b0c57b7267a154}
+\hypertarget{central_8c_a0a046ba5b216c856f5f92de998340103}{
+\index{central.c@{central.c}!start\_\-tcp\_\-server@{start\_\-tcp\_\-server}}
+\index{start\_\-tcp\_\-server@{start\_\-tcp\_\-server}!central.c@{central.c}}
+\subsubsection[{start\_\-tcp\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int start\_\-tcp\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a0a046ba5b216c856f5f92de998340103}
+
+
+Crea el socket, Configura las opciones, enlaza el puerto a la interface y pone el socket a la escucha de conexiones entrantes. 
+
+\hypertarget{central_8c_a88c007c511cdb4664659ac6c53665494}{
+\index{central.c@{central.c}!start\_\-udp\_\-server@{start\_\-udp\_\-server}}
+\index{start\_\-udp\_\-server@{start\_\-udp\_\-server}!central.c@{central.c}}
+\subsubsection[{start\_\-udp\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int start\_\-udp\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a88c007c511cdb4664659ac6c53665494}
+
+
+mirar la funcion 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{central_8c_a0a046ba5b216c856f5f92de998340103}{start\_\-tcp\_\-server} 
+\end{DoxySeeAlso}
+\hypertarget{central_8c_aabb4fe2b5cb12bd1d426c177e27d79a6}{
+\index{central.c@{central.c}!start\_\-unix\_\-socket\_\-server@{start\_\-unix\_\-socket\_\-server}}
+\index{start\_\-unix\_\-socket\_\-server@{start\_\-unix\_\-socket\_\-server}!central.c@{central.c}}
+\subsubsection[{start\_\-unix\_\-socket\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int start\_\-unix\_\-socket\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_aabb4fe2b5cb12bd1d426c177e27d79a6}
+
+
+mirar la funcion 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{central_8c_a0a046ba5b216c856f5f92de998340103}{start\_\-tcp\_\-server} 
+\end{DoxySeeAlso}
+\hypertarget{central_8c_acac87c02c3b8744df11c58335c418849}{
+\index{central.c@{central.c}!stop\_\-main@{stop\_\-main}}
+\index{stop\_\-main@{stop\_\-main}!central.c@{central.c}}
+\subsubsection[{stop\_\-main}]{\setlength{\rightskip}{0pt plus 5cm}void stop\_\-main (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_acac87c02c3b8744df11c58335c418849}
+\hypertarget{central_8c_a77f57e5f7542e39288f1144669a9fef2}{
+\index{central.c@{central.c}!stop\_\-tcp\_\-server@{stop\_\-tcp\_\-server}}
+\index{stop\_\-tcp\_\-server@{stop\_\-tcp\_\-server}!central.c@{central.c}}
+\subsubsection[{stop\_\-tcp\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}void stop\_\-tcp\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a77f57e5f7542e39288f1144669a9fef2}
+
+
+Libera los recursos del socket. 
+
+\hypertarget{central_8c_ad2b586e5390610ce7a5b64f6d8bd02ae}{
+\index{central.c@{central.c}!stop\_\-udp\_\-server@{stop\_\-udp\_\-server}}
+\index{stop\_\-udp\_\-server@{stop\_\-udp\_\-server}!central.c@{central.c}}
+\subsubsection[{stop\_\-udp\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}void stop\_\-udp\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_ad2b586e5390610ce7a5b64f6d8bd02ae}
+
+
+mirar la funcion 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{central_8c_a77f57e5f7542e39288f1144669a9fef2}{stop\_\-tcp\_\-server} 
+\end{DoxySeeAlso}
+\hypertarget{central_8c_a7157e54905c6453ba2b617276834a4e6}{
+\index{central.c@{central.c}!stop\_\-unix\_\-socket\_\-server@{stop\_\-unix\_\-socket\_\-server}}
+\index{stop\_\-unix\_\-socket\_\-server@{stop\_\-unix\_\-socket\_\-server}!central.c@{central.c}}
+\subsubsection[{stop\_\-unix\_\-socket\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}void stop\_\-unix\_\-socket\_\-server (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{central_8c_a7157e54905c6453ba2b617276834a4e6}
+
+
+mirar la funcion 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{central_8c_a77f57e5f7542e39288f1144669a9fef2}{stop\_\-tcp\_\-server} 
+\end{DoxySeeAlso}
+
+
+\subsection{Variable Documentation}
+\hypertarget{central_8c_a7a13a361801dcc59ce4946736fa26726}{
+\index{central.c@{central.c}!maxfd@{maxfd}}
+\index{maxfd@{maxfd}!central.c@{central.c}}
+\subsubsection[{maxfd}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf maxfd}}}
+\label{central_8c_a7a13a361801dcc59ce4946736fa26726}
+
+
+Descriptores tanto para TCP, UDP y Unix. 
+
+\hypertarget{central_8c_af592d9cc891cbe8fb7090f153802e584}{
+\index{central.c@{central.c}!readset@{readset}}
+\index{readset@{readset}!central.c@{central.c}}
+\subsubsection[{readset}]{\setlength{\rightskip}{0pt plus 5cm}fd\_\-set {\bf readset}}}
+\label{central_8c_af592d9cc891cbe8fb7090f153802e584}
+\hypertarget{central_8c_a6865ec8ec3717be1b31fab06f7bb6978}{
+\index{central.c@{central.c}!tcp\_\-socket\_\-server@{tcp\_\-socket\_\-server}}
+\index{tcp\_\-socket\_\-server@{tcp\_\-socket\_\-server}!central.c@{central.c}}
+\subsubsection[{tcp\_\-socket\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf tcp\_\-socket\_\-server}}}
+\label{central_8c_a6865ec8ec3717be1b31fab06f7bb6978}
+\hypertarget{central_8c_a5b40dc3290320de1c4aa021941ddc321}{
+\index{central.c@{central.c}!tempset@{tempset}}
+\index{tempset@{tempset}!central.c@{central.c}}
+\subsubsection[{tempset}]{\setlength{\rightskip}{0pt plus 5cm}fd\_\-set {\bf tempset}}}
+\label{central_8c_a5b40dc3290320de1c4aa021941ddc321}
+\hypertarget{central_8c_abb5b36d13adc46653941914ff9a4d000}{
+\index{central.c@{central.c}!udp\_\-socket\_\-server@{udp\_\-socket\_\-server}}
+\index{udp\_\-socket\_\-server@{udp\_\-socket\_\-server}!central.c@{central.c}}
+\subsubsection[{udp\_\-socket\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf udp\_\-socket\_\-server}}}
+\label{central_8c_abb5b36d13adc46653941914ff9a4d000}
+\hypertarget{central_8c_a78b47c505d6cde92c3c16d4e4df51158}{
+\index{central.c@{central.c}!unix\_\-socket\_\-server@{unix\_\-socket\_\-server}}
+\index{unix\_\-socket\_\-server@{unix\_\-socket\_\-server}!central.c@{central.c}}
+\subsubsection[{unix\_\-socket\_\-server}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf unix\_\-socket\_\-server}}}
+\label{central_8c_a78b47c505d6cde92c3c16d4e4df51158}

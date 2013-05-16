@@ -1,0 +1,87 @@
+\hypertarget{logger_8c}{
+\section{logger.c File Reference}
+\label{logger_8c}\index{logger.c@{logger.c}}
+}
+
+
+Modulo de loggeo.  
+
+
+{\ttfamily \#include $<$unistd.h$>$}\par
+{\ttfamily \#include $<$stdlib.h$>$}\par
+{\ttfamily \#include $<$stdio.h$>$}\par
+{\ttfamily \#include $<$sys/types.h$>$}\par
+{\ttfamily \#include $<$sys/stat.h$>$}\par
+{\ttfamily \#include $<$fcntl.h$>$}\par
+{\ttfamily \#include $<$string.h$>$}\par
+{\ttfamily \#include $<$time.h$>$}\par
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{logger_8c_a2ab71206ccdc2910347d145d218ce376}{inicializarLogger} ()
+\begin{DoxyCompactList}\small\item\em Esta funcion se encarga abrir o crear el log si no existe. \end{DoxyCompactList}\item 
+void \hyperlink{logger_8c_a7948551de0fecae190fab4e9e0c89da0}{logger} (const char $\ast$text)
+\begin{DoxyCompactList}\small\item\em Loggea tanto en el servidor como en el cliente en un archivo de texto. \end{DoxyCompactList}\item 
+void \hyperlink{logger_8c_a4b6c767f5e730219f7e8a810d0d8f25e}{cerrarLogger} ()
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{logger_8c_aa8cfe1318036ef811c2333b0f1177850}{fdLogger}
+\begin{DoxyCompactList}\small\item\em Descriptor para el log. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Modulo de loggeo. \begin{DoxyAuthor}{Author}
+Toti. 
+\end{DoxyAuthor}
+
+
+\subsection{Function Documentation}
+\hypertarget{logger_8c_a4b6c767f5e730219f7e8a810d0d8f25e}{
+\index{logger.c@{logger.c}!cerrarLogger@{cerrarLogger}}
+\index{cerrarLogger@{cerrarLogger}!logger.c@{logger.c}}
+\subsubsection[{cerrarLogger}]{\setlength{\rightskip}{0pt plus 5cm}void cerrarLogger (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{logger_8c_a4b6c767f5e730219f7e8a810d0d8f25e}
+\hypertarget{logger_8c_a2ab71206ccdc2910347d145d218ce376}{
+\index{logger.c@{logger.c}!inicializarLogger@{inicializarLogger}}
+\index{inicializarLogger@{inicializarLogger}!logger.c@{logger.c}}
+\subsubsection[{inicializarLogger}]{\setlength{\rightskip}{0pt plus 5cm}int inicializarLogger (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}}
+\label{logger_8c_a2ab71206ccdc2910347d145d218ce376}
+
+
+Esta funcion se encarga abrir o crear el log si no existe. 
+
+\hypertarget{logger_8c_a7948551de0fecae190fab4e9e0c89da0}{
+\index{logger.c@{logger.c}!logger@{logger}}
+\index{logger@{logger}!logger.c@{logger.c}}
+\subsubsection[{logger}]{\setlength{\rightskip}{0pt plus 5cm}void logger (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{text}
+\end{DoxyParamCaption}
+)}}
+\label{logger_8c_a7948551de0fecae190fab4e9e0c89da0}
+
+
+Loggea tanto en el servidor como en el cliente en un archivo de texto. 
+
+
+
+\subsection{Variable Documentation}
+\hypertarget{logger_8c_aa8cfe1318036ef811c2333b0f1177850}{
+\index{logger.c@{logger.c}!fdLogger@{fdLogger}}
+\index{fdLogger@{fdLogger}!logger.c@{logger.c}}
+\subsubsection[{fdLogger}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf fdLogger}}}
+\label{logger_8c_aa8cfe1318036ef811c2333b0f1177850}
+
+
+Descriptor para el log. 
+
