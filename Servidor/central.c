@@ -29,7 +29,7 @@ typedef struct argumentosThread
 {
     int socketDescriptor;
     int loggerDescriptor;
-}strarg;
+} strarg;
 
 int tcp_socket_server, udp_socket_server, unix_socket_server, maxfd; ///< Descriptores tanto para TCP, UDP y Unix.
 fd_set readset, tempset;
@@ -200,12 +200,16 @@ void read_udp_message()
     // recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
-void read_message()
+void read_message(int socketDescriptorCliente)
 {
+    char buffer[256];
+    int result;
     logger("New message");
-    // do {
-    //    result = recv(j, buffer, MAX_BUFFER_SIZE, 0);
-    // } while (result == -1 && errno == EINTR);
+    do
+    {
+        result = recv(socketDescriptorCliente, buffer, 256, 0);
+    }
+    while (result == -1 && errno == EINTR);
 }
 
 void listen_and_accept_new_clients()
@@ -242,7 +246,8 @@ void listen_and_accept_new_clients()
 
             if (FD_ISSET(tcp_socket_server, &tempset))
             {
-                lanzarThread(tcp_socket_server);
+                int socketClienteAceptado = accept_new_clients(tcp_socket_server);
+                lanzarThread(socketClienteAceptado);
             }
 
             if (FD_ISSET(unix_socket_server, &tempset))
@@ -259,7 +264,7 @@ void listen_and_accept_new_clients()
 //                }      // end if (FD_ISSET(j, &tempset))
 //            }      // end for (j=0;...)
         }
-            // end else if (result > 0)
+        // end else if (result > 0)
     }
     while (1);
 
@@ -295,7 +300,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-void lanzarThread(int udp_socket_server)
+void lanzarThread(int tcp_socket_server)
 {
     printf("Cualquier cosa\n");
     pthread_t unThread;
@@ -310,7 +315,7 @@ void lanzarThread(int udp_socket_server)
 
     strarg *argumentos;
     argumentos = (strarg*)calloc(1, sizeof(strarg));
-    argumentos->socketDescriptor = udp_socket_server;
+    argumentos->socketDescriptor = tcp_socket_server;
 
     if((pthread_create(&unThread, &atributos, atenderPeticion, (void *)argumentos)) != 0)
     {
@@ -324,11 +329,6 @@ void *atenderPeticion (void *argumentos)
     strarg *argumentosDelThread = (strarg*)argumentos;
     logger("La peticion fue atendida correctamente");
     printf("La peticion fue atendida correctamente\n");
-    accept_new_clients(argumentosDelThread->socketDescriptor);
+    read_message(); //TODO: a read message le tengo que pasar el socket descriptor
     return NULL;
-}
-
-void *atenderPeticionUDP (void *argumentos)
-{
-
 }

@@ -1,3 +1,5 @@
+#Ignoro los logs
+*.log
 # Object files
 *.o
 

@@ -31,12 +31,13 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="main.c">
+		<Unit filename="central.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="server.c">
+		<Unit filename="logger.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="logger.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
