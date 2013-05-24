@@ -1,21 +1,42 @@
-#include<stdio.h> //printf
-#include<string.h>    //strlen
-#include<sys/socket.h>    //socket
-#include<arpa/inet.h> //inet_addr
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+/// sockets =>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <sys/un.h>
+/// select =>
+#include <sys/time.h>
+#include <sys/select.h>
+/// threads
+#include <pthread.h>
+/// log
 #include "loggerCliente.h"
+
 #define PUERTO_DESTINO 3456
-#define IP_DESTINO "192.168.1.103"
+#define IP_DESTINO "192.168.1.101"
+
+void menu (int socketDescriptor);
 
 int main (int argc, char *argv[])
 {
     int sock;
     struct sockaddr_in server;
 
+    inicializarLogger();
+
     ///@brief Creo el socket para el cliente
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
         perror("Error al crear socket cliente");
-        return EXIT_FAILURE;
+        logger("Error al crear el socket cliente.");
+        exit(EXIT_FAILURE);
     }
 
     server.sin_addr.s_addr = inet_addr(IP_DESTINO);
@@ -26,9 +47,12 @@ int main (int argc, char *argv[])
     if (connect(sock, (struct sockaddr *)&server, sizeof(server)) == -1)
     {
         perror("Error en la conexion");
-        return EXIT_FAILURE;
+        logger("Error en la conexion al servidor.");
+        exit(EXIT_FAILURE);
     }
 
+    menu(sock);
+    return 1;
 }
 
 void menu (int socketDescriptor)
@@ -57,4 +81,3 @@ void menu (int socketDescriptor)
     }
     while (opcionMenu != 3);
 }
-

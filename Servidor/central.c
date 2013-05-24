@@ -1,5 +1,3 @@
-///@brief Modo de uso: gcc  -o server server.c -ggdb -Wall
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -18,7 +16,9 @@
 #include <sys/select.h>
 /// threads
 #include <pthread.h>
+/// log
 #include "logger.h"
+
 #define PORT 3456
 #define UNIX_SOCK_PATH "/tmp/lab3.sock"
 
@@ -241,13 +241,13 @@ void listen_and_accept_new_clients()
         {
             if (FD_ISSET(udp_socket_server, &tempset))
             {
-                lanzarThreadUDP(udp_socket_server);
+                //lanzarThreadUDP(udp_socket_server);
             }
 
             if (FD_ISSET(tcp_socket_server, &tempset))
             {
                 int socketClienteAceptado = accept_new_clients(tcp_socket_server);
-                lanzarThread(socketClienteAceptado);
+                //lanzarThread(socketClienteAceptado);
             }
 
             if (FD_ISSET(unix_socket_server, &tempset))
@@ -329,6 +329,6 @@ void *atenderPeticion (void *argumentos)
     strarg *argumentosDelThread = (strarg*)argumentos;
     logger("La peticion fue atendida correctamente");
     printf("La peticion fue atendida correctamente\n");
-    read_message(); //TODO: a read message le tengo que pasar el socket descriptor
+    //read_message(); //TODO: a read message le tengo que pasar el socket descriptor
     return NULL;
 }
