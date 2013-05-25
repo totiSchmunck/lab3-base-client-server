@@ -20,13 +20,14 @@
 #include "loggerCliente.h"
 
 #define PUERTO_DESTINO 3456
-#define IP_DESTINO "192.168.1.101"
+#define IP_DESTINO "127.0.0.1"
 
-void menu (int socketDescriptor);
+void optionDispatcher(int opcionMenu);
+void menu ();
+int sock;
 
 int main (int argc, char *argv[])
 {
-    int sock;
     struct sockaddr_in server;
 
     inicializarLogger();
@@ -51,11 +52,11 @@ int main (int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    menu(sock);
+    menu();
     return 1;
 }
 
-void menu (int socketDescriptor)
+void menu ()
 {
     int opcionMenu;
 
@@ -76,8 +77,22 @@ void menu (int socketDescriptor)
         }
         else
         {
-
+            optionDispatcher(opcionMenu);
         }
+        //TODO: clearscreen
     }
     while (opcionMenu != 3);
+}
+
+void optionDispatcher(int opcionMenu) {
+    int cantidadEnviada;
+    switch(opcionMenu) {
+        case 1:
+        cantidadEnviada = send(sock, "hola mundo\0", strlen("hola mundo\0"), 0);
+        if(cantidadEnviada)
+        printf("Se envio satisfactoriamente %d bytes\n", cantidadEnviada);
+        break;
+        case 2:
+        break;
+    }
 }

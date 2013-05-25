@@ -22,9 +22,19 @@
 #define PORT 3456
 #define UNIX_SOCK_PATH "/tmp/lab3.sock"
 
+///Defines opciones GUI
+#define VER_CLIENTES_CONECTADOS 1
+
+#define TAMANIO_OPCION 64
+
+///Defines opciones de recepcion, las que me envia el cliente...
+#define CLIENTE_ENVIANDO_ARCHIVO 1
+#define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
+
 void *atenderPeticion (void *argumentos);
 void lanzarThread(int udp_socket_server);
-
+void menuGUI();
+void mostrarListadoClientesConectados();
 typedef struct argumentosThread
 {
     int socketDescriptor;
@@ -189,27 +199,34 @@ int accept_new_clients(int socket)
         if (!(errno == ENETDOWN || errno == EPROTO || errno == ENOPROTOOPT || errno == EHOSTDOWN || errno == ENONET || errno == EHOSTUNREACH || errno == EOPNOTSUPP || errno == ENETUNREACH))
             perror("accept error");
     FD_SET(result, &readset);
+    FD_SET(result, &tempset); //Agregado los clientes al tempset tambien para que los vea en el for
     maxfd = (maxfd < result) ? result : maxfd;
     FD_CLR(socket, &tempset);
     return result;
 }
 
-void read_udp_message()
+void read_udp_option()
 {
     logger("New UDP message");
     // recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
-void read_message(int socketDescriptorCliente)
+int read_option(int socketDescriptorCliente)
 {
-    char buffer[256];
+    char bufferOpcion[TAMANIO_OPCION];
+    char mensajeLog[256];
     int result;
-    logger("New message");
+    int retorno;
+    logger("funcion read_option");
     do
     {
-        result = recv(socketDescriptorCliente, buffer, 256, 0);
+        result = recv(socketDescriptorCliente, bufferOpcion, TAMANIO_OPCION, 0);
     }
     while (result == -1 && errno == EINTR);
+
+    sprintf(mensajeLog, "read_option: Se leyo: %s y el result fue: %d\n", bufferOpcion, result);
+    logger(mensajeLog);
+    retorno = (result > 0) ? atoi(bufferOpcion) : result;
 }
 
 void listen_and_accept_new_clients()
@@ -224,7 +241,14 @@ void listen_and_accept_new_clients()
 
     do
     {
-        memcpy(&tempset, &readset, sizeof(tempset));
+//        menuGUI();
+        mostrarListadoClientesConectados(); //testing
+        //memcpy(&tempset, &readset, sizeof(tempset));
+
+        FD_SET(tcp_socket_server, &tempset);
+        FD_SET(udp_socket_server, &tempset); //Vuelvo agregar los servidores para ver si hay nuevos clientes que aceptar
+        FD_SET(unix_socket_server, &tempset);
+
         tv.tv_sec = 30;
         tv.tv_usec = 0;
         result = select(maxfd + 1, &tempset, NULL, NULL, &tv);
@@ -247,22 +271,25 @@ void listen_and_accept_new_clients()
             if (FD_ISSET(tcp_socket_server, &tempset))
             {
                 int socketClienteAceptado = accept_new_clients(tcp_socket_server);
+                printf("Se acepto un cliente %d\n", socketClienteAceptado);
                 //lanzarThread(socketClienteAceptado);
             }
 
             if (FD_ISSET(unix_socket_server, &tempset))
             {
-                lanzarThread(unix_socket_server);
+                //lanzarThread(unix_socket_server);
             }
-
-//            for (j=0; j<maxfd+1; j++)
-//            {
-//                if (FD_ISSET(j, &tempset))
-//                {
-//                    lanzarThread(j);
-//                    FD_CLR(j, &tempset);
-//                }      // end if (FD_ISSET(j, &tempset))
-//            }      // end for (j=0;...)
+//            printf("\t\tBuscando clientes en el tempset\n\n");
+            for (j=0; j<maxfd+1; j++)
+            {
+//                printf("%d |", j);
+                if (FD_ISSET(j, &tempset)) //En este momento estan solo los clientes. Los servidores los elimine en accept
+                {
+                    lanzarThread(j);
+                    FD_CLR(j, &tempset); //Elimino el cliente que acabo de atender.
+                }      // end if (FD_ISSET(j, &tempset))
+            }      // end for (j=0;...)
+//            printf("\n");
         }
         // end else if (result > 0)
     }
@@ -295,14 +322,39 @@ int main(int argc, char *argv[])
     }
 
     listen_and_accept_new_clients();
+
     stop_main();
     cerrarLogger();
     return EXIT_SUCCESS;
 }
 
+void menuGUI() {
+    int opcionMenu;
+    printf("Ingrese 1 para ver la lista de clientes conectados\n.");
+    scanf("%d", &opcionMenu);
+    switch(opcionMenu) {
+        case VER_CLIENTES_CONECTADOS:
+        mostrarListadoClientesConectados();
+        break;
+    }
+}
+
+void mostrarListadoClientesConectados() {
+    int i, serverCount = 0;
+    printf("\t\tLista de clientes conectados\n\n");
+    for(i = 0; i < maxfd+1; i++) {
+        if(FD_ISSET(i, &readset)) {
+            if(serverCount>2)
+                printf("%d |", i);
+            serverCount++;
+        }
+    }
+    printf("\n");
+}
+
 void lanzarThread(int tcp_socket_server)
 {
-    printf("Cualquier cosa\n");
+    printf("Funcion lanzar thread\n");
     pthread_t unThread;
     pthread_attr_t atributos;
 
@@ -326,9 +378,42 @@ void lanzarThread(int tcp_socket_server)
 
 void *atenderPeticion (void *argumentos)
 {
+    logger("funcion atenderPeticion");
+
+    int opcion;
+    char mensaje[256];
+
     strarg *argumentosDelThread = (strarg*)argumentos;
-    logger("La peticion fue atendida correctamente");
-    printf("La peticion fue atendida correctamente\n");
-    //read_message(); //TODO: a read message le tengo que pasar el socket descriptor
+
+    do
+    {
+        opcion = read_option(argumentosDelThread->socketDescriptor);
+
+        if(opcion == -1)
+            sprintf(mensaje, "ERROR: Cliente %d desconectado abruptamente. Cerrando thread\n", argumentosDelThread->socketDescriptor);
+        else if (opcion == 0)
+            sprintf(mensaje, "Cliente %d desconectado de forma normal. Cerrando thread\n", argumentosDelThread->socketDescriptor);
+        else
+            dispatchOpcionRecibida(opcion);
+
+        logger(mensaje);
+    }
+    while(opcion > 0);  //El corte debería ser el error de read_message, por ejemplo que se desconecto el cliente...
+    FD_CLR(argumentosDelThread->socketDescriptor, &readset);
     return NULL;
+}
+
+int dispatchOpcionRecibida(int opcion) {
+    switch(opcion) {
+        case CLIENTE_ENVIANDO_ARCHIVO:
+            //read de 256 para el tamaño del archivo.
+            //read de 256 para el destinatario
+            //luego leo hasta tamaño del archivo
+        break;
+        case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
+            //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
+            //escribo cantidad de clientes que hay en el conjunto
+            //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
+        break;
+    }
 }
