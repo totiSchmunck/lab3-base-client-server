@@ -31,10 +31,22 @@
 #define CLIENTE_ENVIANDO_ARCHIVO 1
 #define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
 
+#define TAMANIO_MAXIMO_RUTA 256
+
+#define ENVIO_SOCKET_SIZE 256
+
+#define FILE_BUFFER_SIZE 256
+
+#define MSG_TAMANIO_ARCHIVO_SIZE 1024
+
+#define TAM_MENSAJE_LOGGER 256
+
 void *atenderPeticion (void *argumentos);
 void lanzarThread(int udp_socket_server);
 void menuGUI();
 void mostrarListadoClientesConectados();
+int dispatchOpcionRecibida(int opcion, int socketCliente);
+
 typedef struct argumentosThread
 {
     int socketDescriptor;
@@ -211,22 +223,43 @@ void read_udp_option()
     // recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
-int read_option(int socketDescriptorCliente)
+int read_message(int socketDescriptorCliente, int tamanioMensaje)
 {
-    char bufferOpcion[TAMANIO_OPCION];
-    char mensajeLog[256];
+    char buffer[tamanioMensaje];
+    char mensajeLog[TAM_MENSAJE_LOGGER];
     int result;
     int retorno;
-    logger("funcion read_option");
+    logger("funcion read_message");
     do
     {
-        result = recv(socketDescriptorCliente, bufferOpcion, TAMANIO_OPCION, 0);
+        result = recv(socketDescriptorCliente, buffer, tamanioMensaje, 0);
     }
     while (result == -1 && errno == EINTR);
 
-    sprintf(mensajeLog, "read_option: Se leyo: %s y el result fue: %d\n", bufferOpcion, result);
+    sprintf(mensajeLog, "read_socketDestino: Se leyo: %s y el result fue: %d\n", buffer, result);
     logger(mensajeLog);
-    retorno = (result > 0) ? atoi(bufferOpcion) : result;
+    retorno = (result > 0) ? atol(buffer) : result;
+}
+
+int read_Archivo(int socketDescriptorCliente, int tamanioArchivo)
+{
+    char buffer[FILE_BUFFER_SIZE];
+    char mensajeLog[TAM_MENSAJE_LOGGER];
+    int result;
+    int cantidadTotalBytes = 0;
+    int retorno;
+    printf("\n\t\tLeyendo Archivo\n");
+    do
+    {
+        result = recv(socketDescriptorCliente, buffer, FILE_BUFFER_SIZE, 0);
+        cantidadTotalBytes += result;
+        printf("%s", buffer);
+    }
+    while ((result == -1 && errno == EINTR) || ((cantidadTotalBytes < tamanioArchivo) && result != -1));
+    printf("\n");
+    sprintf(mensajeLog, "read_Archivo: Se leyo: %s y el result fue: %d\n", buffer, result);
+    logger(mensajeLog);
+    retorno = (result > 0) ? cantidadTotalBytes : -1;
 }
 
 void listen_and_accept_new_clients()
@@ -352,7 +385,7 @@ void mostrarListadoClientesConectados() {
     printf("\n");
 }
 
-void lanzarThread(int tcp_socket_server)
+void lanzarThread(int socket_server)
 {
     printf("Funcion lanzar thread\n");
     pthread_t unThread;
@@ -360,18 +393,16 @@ void lanzarThread(int tcp_socket_server)
 
     if (pthread_attr_init(&atributos) != 0)
     {
-        perror("Problema al inicializar los atributos del thread");
         logger("Problema al inicializar los atributos del thread");
         exit(EXIT_FAILURE);
     }
 
     strarg *argumentos;
     argumentos = (strarg*)calloc(1, sizeof(strarg));
-    argumentos->socketDescriptor = tcp_socket_server;
+    argumentos->socketDescriptor = socket_server;
 
     if((pthread_create(&unThread, &atributos, atenderPeticion, (void *)argumentos)) != 0)
     {
-        perror("Problema al iniciar el thread");
         logger("Problema al iniciar el thread");
     }
 }
@@ -387,28 +418,32 @@ void *atenderPeticion (void *argumentos)
 
     do
     {
-        opcion = read_option(argumentosDelThread->socketDescriptor);
-
+        opcion = read_message(argumentosDelThread->socketDescriptor, TAMANIO_OPCION);
+        printf("Me llego la opcion %d por parte del cliente\n", opcion);
         if(opcion == -1)
             sprintf(mensaje, "ERROR: Cliente %d desconectado abruptamente. Cerrando thread\n", argumentosDelThread->socketDescriptor);
         else if (opcion == 0)
             sprintf(mensaje, "Cliente %d desconectado de forma normal. Cerrando thread\n", argumentosDelThread->socketDescriptor);
         else
-            dispatchOpcionRecibida(opcion);
+            dispatchOpcionRecibida(opcion, argumentosDelThread->socketDescriptor);
 
         logger(mensaje);
     }
-    while(opcion > 0);  //El corte debería ser el error de read_message, por ejemplo que se desconecto el cliente...
+    while(opcion > -1);  //TODO El corte debería ser el error de read_message, por ejemplo que se desconecto el cliente es un 0...
     FD_CLR(argumentosDelThread->socketDescriptor, &readset);
     return NULL;
 }
 
-int dispatchOpcionRecibida(int opcion) {
+int dispatchOpcionRecibida(int opcion, int socketCliente) {
+    int descriptorDestino;
+    long int tamanioArchivoRecibido;
+    long int tamanioLeido = 0;
     switch(opcion) {
         case CLIENTE_ENVIANDO_ARCHIVO:
-            //read de 256 para el tamaño del archivo.
-            //read de 256 para el destinatario
-            //luego leo hasta tamaño del archivo
+            descriptorDestino = read_message(socketCliente, ENVIO_SOCKET_SIZE);
+            tamanioArchivoRecibido = read_message(socketCliente, MSG_TAMANIO_ARCHIVO_SIZE);
+            tamanioLeido = read_Archivo(socketCliente, tamanioArchivoRecibido);
+            printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
         break;
         case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
             //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
