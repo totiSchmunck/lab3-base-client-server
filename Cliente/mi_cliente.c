@@ -31,7 +31,9 @@
 #define GUI_PEDIR_LISTADO 2
 
 ///Defines opciones de recepcion, las que me envia el cliente...
+
 #define CLIENTE_ENVIANDO_ARCHIVO 1
+#define SERVER_ENVIANDO_ARCHIVO 3
 #define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
 
 #define TAMANIO_OPCION 64
@@ -42,10 +44,20 @@
 
 #define MSG_TAMANIO_ARCHIVO_SIZE 1024
 
+int read_Archivo(int socketDescriptorServer, int tamanioArchivo);
 void optionDispatcher(int opcionMenu);
 void menu ();
 int enviarArchivo();
+void lanzarThread(int socket_server);
+int dispatchOpcionRecibida(int opcionServer, int socketServer);
+void *atenderPeticionDelServidor(void *argumentos);
+
 int sock;
+
+typedef struct argumentosThread
+{
+    int socketDescriptorServer;
+} strarg;
 
 int main (int argc, char *argv[])
 {
@@ -72,7 +84,7 @@ int main (int argc, char *argv[])
         logger("Error en la conexion al servidor.");
         exit(EXIT_FAILURE);
     }
-
+    lanzarThread(sock);
     menu();
     return 1;
 }
@@ -220,4 +232,102 @@ int enviarArchivo()
     }
 }
 
+void lanzarThread(int socket_server)
+{
+    printf("Funcion lanzar thread\n");
+    pthread_t unThread;
+    pthread_attr_t atributos;
+
+    if (pthread_attr_init(&atributos) != 0)
+    {
+        logger("Problema al inicializar los atributos del thread");
+        exit(EXIT_FAILURE);
+    }
+
+    strarg *argumentos;
+    argumentos = (strarg*)calloc(1, sizeof(strarg));
+    argumentos->socketDescriptorServer = sock;
+
+    if((pthread_create(&unThread, &atributos, atenderPeticionDelServidor, (void *)argumentos)) != 0)
+    {
+        logger("Problema al iniciar el thread");
+    }
+}
+
+void *atenderPeticionDelServidor(void *argumentos)
+{
+    strarg *argumentosThread = (strarg*)argumentos;
+    char mensaje[256];
+    int opcionServer;
+
+    do {
+        opcionServer = read_message(argumentosThread->socketDescriptorServer, TAMANIO_OPCION);
+        printf("Me llego la opcion por parte del server %d\n", opcionServer);
+        if(opcionServer == -1)
+            sprintf(mensaje, "ERROR: Se cayo el servidor. Cerrando thread\n");
+        else if (opcionServer == 0)
+            sprintf(mensaje, "Se cerro el servidor. Cerrando thread\n");
+        else
+            dispatchOpcionRecibida(opcionServer, argumentosThread->socketDescriptorServer);
+    }
+    while(opcionServer > -1);
+    return NULL;
+}
+
+int read_message(int socketDescriptorServer, int tamanioMensaje)
+{
+    char buffer[tamanioMensaje];
+    char mensajeLog[TAM_MENSAJE_LOGGER];
+    int result;
+    int retorno;
+    logger("funcion read_message");
+    do
+    {
+        result = recv(socketDescriptorServer, buffer, tamanioMensaje, 0);
+    }
+    while (result == -1 && errno == EINTR);
+
+    sprintf(mensajeLog, "read_message: Se leyo: %s y el result fue: %d\n", buffer, result);
+    logger(mensajeLog);
+    retorno = (result > 0) ? atol(buffer) : result;
+}
+
+int dispatchOpcionRecibida(int opcionServer, int socketServer)
+{
+    long int tamanioArchivoRecibido;
+    long int tamanioLeido = 0;
+    switch(opcionServer) {
+        case SERVER_ENVIANDO_ARCHIVO:
+            tamanioArchivoRecibido = read_message(socketServer, MSG_TAMANIO_ARCHIVO_SIZE);
+            tamanioLeido = read_Archivo(socketServer, tamanioArchivoRecibido);
+            printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
+        break;
+        case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
+            //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
+            //escribo cantidad de clientes que hay en el conjunto
+            //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
+        break;
+    }
+}
+
+int read_Archivo(int socketDescriptorServer, int tamanioArchivo)
+{
+    char buffer[FILE_BUFFER_SIZE];
+    char mensajeLog[TAM_MENSAJE_LOGGER];
+    int result;
+    int cantidadTotalBytes = 0;
+    int retorno;
+    printf("\t\tLeyendo Archivo\n");
+    do
+    {
+        result = recv(socketDescriptorServer, buffer, FILE_BUFFER_SIZE, 0);
+        cantidadTotalBytes += result;
+        printf("%s", buffer);
+    }
+    while ((result == -1 && errno == EINTR) || ((cantidadTotalBytes < tamanioArchivo) && result != -1));
+    printf("\n");
+    sprintf(mensajeLog, "read_Archivo: Se leyo: %s y el result fue: %d\n", buffer, result);
+    logger(mensajeLog);
+    retorno = (result > 0) ? cantidadTotalBytes : -1;
+}
 

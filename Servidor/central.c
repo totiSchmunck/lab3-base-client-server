@@ -30,6 +30,7 @@
 ///Defines opciones de recepcion, las que me envia el cliente...
 #define CLIENTE_ENVIANDO_ARCHIVO 1
 #define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
+#define SERVER_ENVIANDO_ARCHIVO 3
 
 #define TAMANIO_MAXIMO_RUTA 256
 
@@ -41,6 +42,7 @@
 
 #define TAM_MENSAJE_LOGGER 256
 
+int fileTansfer(int socketDescriptorCliente, int tamanioArchivo, int socketDestino);
 void *atenderPeticion (void *argumentos);
 void lanzarThread(int udp_socket_server);
 void menuGUI();
@@ -50,7 +52,6 @@ int dispatchOpcionRecibida(int opcion, int socketCliente);
 typedef struct argumentosThread
 {
     int socketDescriptor;
-    int loggerDescriptor;
 } strarg;
 
 int tcp_socket_server, udp_socket_server, unix_socket_server, maxfd; ///< Descriptores tanto para TCP, UDP y Unix.
@@ -241,18 +242,26 @@ int read_message(int socketDescriptorCliente, int tamanioMensaje)
     retorno = (result > 0) ? atol(buffer) : result;
 }
 
-int read_Archivo(int socketDescriptorCliente, int tamanioArchivo)
+int fileTansfer(int socketDescriptorCliente, int tamanioArchivo, int socketDestino)
 {
     char buffer[FILE_BUFFER_SIZE];
     char mensajeLog[TAM_MENSAJE_LOGGER];
     int result;
     int cantidadTotalBytes = 0;
     int retorno;
+    char bufferOpcion[TAMANIO_OPCION];
     printf("\n\t\tLeyendo Archivo\n");
+    memset(bufferOpcion, '\0', TAMANIO_OPCION);
+    sprintf(bufferOpcion, "%d", SERVER_ENVIANDO_ARCHIVO);
+    send(socketDestino, bufferOpcion, TAMANIO_OPCION, 0);
+    memset(buffer, '\0', FILE_BUFFER_SIZE);
+    sprintf(buffer, "%d", tamanioArchivo);
+    send(socketDestino, buffer, MSG_TAMANIO_ARCHIVO_SIZE, 0);
     do
     {
         result = recv(socketDescriptorCliente, buffer, FILE_BUFFER_SIZE, 0);
         cantidadTotalBytes += result;
+        send(socketDestino, buffer, result, 0);
         printf("%s", buffer);
     }
     while ((result == -1 && errno == EINTR) || ((cantidadTotalBytes < tamanioArchivo) && result != -1));
@@ -361,22 +370,27 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-void menuGUI() {
+void menuGUI()
+{
     int opcionMenu;
     printf("Ingrese 1 para ver la lista de clientes conectados\n.");
     scanf("%d", &opcionMenu);
-    switch(opcionMenu) {
-        case VER_CLIENTES_CONECTADOS:
+    switch(opcionMenu)
+    {
+    case VER_CLIENTES_CONECTADOS:
         mostrarListadoClientesConectados();
         break;
     }
 }
 
-void mostrarListadoClientesConectados() {
+void mostrarListadoClientesConectados()
+{
     int i, serverCount = 0;
     printf("\t\tLista de clientes conectados\n\n");
-    for(i = 0; i < maxfd+1; i++) {
-        if(FD_ISSET(i, &readset)) {
+    for(i = 0; i < maxfd+1; i++)
+    {
+        if(FD_ISSET(i, &readset))
+        {
             if(serverCount>2)
                 printf("%d |", i);
             serverCount++;
@@ -434,21 +448,23 @@ void *atenderPeticion (void *argumentos)
     return NULL;
 }
 
-int dispatchOpcionRecibida(int opcion, int socketCliente) {
+int dispatchOpcionRecibida(int opcion, int socketCliente)
+{
     int descriptorDestino;
     long int tamanioArchivoRecibido;
     long int tamanioLeido = 0;
-    switch(opcion) {
-        case CLIENTE_ENVIANDO_ARCHIVO:
-            descriptorDestino = read_message(socketCliente, ENVIO_SOCKET_SIZE);
-            tamanioArchivoRecibido = read_message(socketCliente, MSG_TAMANIO_ARCHIVO_SIZE);
-            tamanioLeido = read_Archivo(socketCliente, tamanioArchivoRecibido);
-            printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
+    switch(opcion)
+    {
+    case CLIENTE_ENVIANDO_ARCHIVO:
+        descriptorDestino = read_message(socketCliente, ENVIO_SOCKET_SIZE);
+        tamanioArchivoRecibido = read_message(socketCliente, MSG_TAMANIO_ARCHIVO_SIZE);
+        tamanioLeido = fileTansfer(socketCliente, tamanioArchivoRecibido, descriptorDestino);
+        printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
         break;
-        case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
-            //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
-            //escribo cantidad de clientes que hay en el conjunto
-            //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
+    case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
+        //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
+        //escribo cantidad de clientes que hay en el conjunto
+        //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
         break;
     }
 }
