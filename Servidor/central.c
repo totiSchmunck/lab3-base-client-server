@@ -31,8 +31,11 @@
 #define CLIENTE_ENVIANDO_ARCHIVO 1
 #define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
 #define SERVER_ENVIANDO_ARCHIVO 3
+#define SERVIDOR_ENVIANDO_LISTA_DE_CLIENTES 4
 
 #define TAMANIO_MAXIMO_RUTA 256
+
+#define ENVIO_CANTIDAD_DE_CLIENTES 256
 
 #define ENVIO_SOCKET_SIZE 256
 
@@ -45,9 +48,11 @@
 int fileTansfer(int socketDescriptorCliente, int tamanioArchivo, int socketDestino);
 void *atenderPeticion (void *argumentos);
 void lanzarThread(int udp_socket_server);
-void menuGUI();
-void mostrarListadoClientesConectados();
+int mostrarListadoClientesConectados();
 int dispatchOpcionRecibida(int opcion, int socketCliente);
+void menuGUI();
+void *menu_servidor();
+void enviarListado (int socketCliente);
 
 typedef struct argumentosThread
 {
@@ -56,6 +61,9 @@ typedef struct argumentosThread
 
 int tcp_socket_server, udp_socket_server, unix_socket_server, maxfd; ///< Descriptores tanto para TCP, UDP y Unix.
 fd_set readset, tempset;
+
+int cantidadDeClientesConectados = 0;
+int cantidadDeArchivosTransferidos = 0;
 
 ///@brief Crea el socket, Configura las opciones, enlaza el puerto a la interface y pone el socket a la escucha de conexiones entrantes.
 int start_tcp_server()
@@ -211,17 +219,12 @@ int accept_new_clients(int socket)
         // These are not errors according to the manpage.
         if (!(errno == ENETDOWN || errno == EPROTO || errno == ENOPROTOOPT || errno == EHOSTDOWN || errno == ENONET || errno == EHOSTUNREACH || errno == EOPNOTSUPP || errno == ENETUNREACH))
             perror("accept error");
+    cantidadDeClientesConectados++;
     FD_SET(result, &readset);
     FD_SET(result, &tempset); //Agregado los clientes al tempset tambien para que los vea en el for
     maxfd = (maxfd < result) ? result : maxfd;
     FD_CLR(socket, &tempset);
     return result;
-}
-
-void read_udp_option()
-{
-    logger("New UDP message");
-    // recvfrom(s, buf, BUFLEN, 0, &si_other, &slen)
 }
 
 int read_message(int socketDescriptorCliente, int tamanioMensaje)
@@ -236,9 +239,6 @@ int read_message(int socketDescriptorCliente, int tamanioMensaje)
         result = recv(socketDescriptorCliente, buffer, tamanioMensaje, 0);
     }
     while (result == -1 && errno == EINTR);
-
-    sprintf(mensajeLog, "read_socketDestino: Se leyo: %s y el result fue: %d\n", buffer, result);
-    logger(mensajeLog);
     retorno = (result > 0) ? atol(buffer) : result;
 }
 
@@ -265,7 +265,7 @@ int fileTansfer(int socketDescriptorCliente, int tamanioArchivo, int socketDesti
         printf("%s", buffer);
     }
     while ((result == -1 && errno == EINTR) || ((cantidadTotalBytes < tamanioArchivo) && result != -1));
-    printf("\n");
+    cantidadDeArchivosTransferidos++;
     sprintf(mensajeLog, "read_Archivo: Se leyo: %s y el result fue: %d\n", buffer, result);
     logger(mensajeLog);
     retorno = (result > 0) ? cantidadTotalBytes : -1;
@@ -284,7 +284,7 @@ void listen_and_accept_new_clients()
     do
     {
 //        menuGUI();
-        mostrarListadoClientesConectados(); //testing
+        //mostrarListadoClientesConectados(); //testing
         //memcpy(&tempset, &readset, sizeof(tempset));
 
         FD_SET(tcp_socket_server, &tempset);
@@ -313,8 +313,7 @@ void listen_and_accept_new_clients()
             if (FD_ISSET(tcp_socket_server, &tempset))
             {
                 int socketClienteAceptado = accept_new_clients(tcp_socket_server);
-                printf("Se acepto un cliente %d\n", socketClienteAceptado);
-                //lanzarThread(socketClienteAceptado);
+                printf("Cliente Nuevo\n");
             }
 
             if (FD_ISSET(unix_socket_server, &tempset))
@@ -353,6 +352,9 @@ int main(int argc, char *argv[])
     inicializarLogger();
     logger("Loading server.....");
 
+    pthread_t v_thread_menu_servidor;
+    pthread_create (&v_thread_menu_servidor, NULL, menu_servidor, NULL);
+
     if (start_tcp_server() && start_udp_server() && start_unix_socket_server())
     {
         logger("Server started successfully");
@@ -372,36 +374,77 @@ int main(int argc, char *argv[])
 
 void menuGUI()
 {
-    int opcionMenu;
-    printf("Ingrese 1 para ver la lista de clientes conectados\n.");
-    scanf("%d", &opcionMenu);
-    switch(opcionMenu)
-    {
-    case VER_CLIENTES_CONECTADOS:
-        mostrarListadoClientesConectados();
-        break;
-    }
+    printf("\t\t----------------MENU------------------\n\n");
+    printf("1-Mostrar la cantidad de clientes online\n");
+    printf("2-Mostrar cantidad de archivos descargados\n");
+    printf("3-Mostrar la cantidad de bytes transmitidos\n");
+    printf("4-Mostrar lista de clientes conectados\n");
+    printf("5-Salir\n");
 }
 
-void mostrarListadoClientesConectados()
+//THREAD para manejar el menu del servidor
+void *menu_servidor()
 {
-    int i, serverCount = 0;
+    char option;
+    char ignored;
+    do
+    {
+        menuGUI();
+        option = fgetc(stdin);
+        do
+        {
+            ignored = fgetc(stdin);
+        }
+        while ((ignored != '\n') && (ignored != EOF));
+
+        switch (option)
+        {
+        case '1': //Muestro la cantidad de clientes online
+            printf("Cantidad de clientes conectados: %d\n", cantidadDeClientesConectados);
+            printf("\n\nPresione cualquier tecla para continuar\n");
+            getchar();
+            break;
+        case '2': //Muestro la cantidad de archivos descargados
+            printf("Cantidad de archivos transferidos: %d\n", cantidadDeArchivosTransferidos);
+            printf("\n\nPresione cualquier tecla para continuar\n");
+            getchar();
+            break;
+        case '3': //Muestro la cantidad de bytes transmitidos
+            break;
+        case '4': //Muestro la lista de usuarios
+            mostrarListadoClientesConectados();
+            break;
+        case '5': //Cierro el servidor(esto hay que mejorarlo)
+            exit( 1 );
+            break;
+        }
+    }
+    while (1);
+}
+
+int mostrarListadoClientesConectados()
+{
+    int i, serverCount = 0, contCli = 0;
     printf("\t\tLista de clientes conectados\n\n");
     for(i = 0; i < maxfd+1; i++)
     {
         if(FD_ISSET(i, &readset))
         {
             if(serverCount>2)
+            {
                 printf("%d |", i);
+                contCli++;
+            }
+
             serverCount++;
         }
     }
     printf("\n");
+    return contCli;
 }
 
 void lanzarThread(int socket_server)
 {
-    printf("Funcion lanzar thread\n");
     pthread_t unThread;
     pthread_attr_t atributos;
 
@@ -443,7 +486,7 @@ void *atenderPeticion (void *argumentos)
 
         logger(mensaje);
     }
-    while(opcion > -1);  //TODO El corte debería ser el error de read_message, por ejemplo que se desconecto el cliente es un 0...
+    while(opcion > 0);  //TODO El corte debería ser el error de read_message, por ejemplo que se desconecto el cliente es un 0...
     FD_CLR(argumentosDelThread->socketDescriptor, &readset);
     return NULL;
 }
@@ -453,18 +496,48 @@ int dispatchOpcionRecibida(int opcion, int socketCliente)
     int descriptorDestino;
     long int tamanioArchivoRecibido;
     long int tamanioLeido = 0;
+    char bufferOpcionEnvioLista[TAMANIO_OPCION];
+    char bufferCantidadDeClientes[ENVIO_CANTIDAD_DE_CLIENTES];
     switch(opcion)
     {
     case CLIENTE_ENVIANDO_ARCHIVO:
         descriptorDestino = read_message(socketCliente, ENVIO_SOCKET_SIZE);
         tamanioArchivoRecibido = read_message(socketCliente, MSG_TAMANIO_ARCHIVO_SIZE);
         tamanioLeido = fileTansfer(socketCliente, tamanioArchivoRecibido, descriptorDestino);
-        printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
         break;
     case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
-        //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
+        memset(bufferOpcionEnvioLista, '\0', TAMANIO_OPCION);
+        sprintf(bufferOpcionEnvioLista, "%d", SERVIDOR_ENVIANDO_LISTA_DE_CLIENTES);
+        send(socketCliente, bufferOpcionEnvioLista, TAMANIO_OPCION, 0);
+        int cantClientes = mostrarListadoClientesConectados();
+        memset(bufferCantidadDeClientes, '\0', ENVIO_CANTIDAD_DE_CLIENTES);
+        sprintf(bufferCantidadDeClientes, "%d", cantClientes);
+        send(socketCliente, bufferCantidadDeClientes, ENVIO_CANTIDAD_DE_CLIENTES, 0);
+        enviarListado(socketCliente);
         //escribo cantidad de clientes que hay en el conjunto
         //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
         break;
     }
 }
+
+void enviarListado (int socketCliente)
+{
+    int i, serverCount = 0;
+    char bufferSocketCliente[TAMANIO_OPCION];
+    for(i = 0; i < maxfd+1; i++)
+    {
+        if(FD_ISSET(i, &readset))
+        {
+            if(serverCount>2)
+            {
+                memset(bufferSocketCliente, '\0', TAMANIO_OPCION);
+                sprintf(bufferSocketCliente, "%d", i);
+                send(socketCliente, bufferSocketCliente, TAMANIO_OPCION, 0);
+            }
+
+            serverCount++;
+        }
+    }
+}
+
+

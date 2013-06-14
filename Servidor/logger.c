@@ -24,7 +24,6 @@ int inicializarLogger ()
         perror("Error al crear o abrir el log");
         return EXIT_FAILURE;
     }
-    printf("Abri el archivo\n");
 }
 
 ///@brief Loggea tanto en el servidor como en el cliente en un archivo de texto.

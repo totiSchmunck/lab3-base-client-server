@@ -35,6 +35,10 @@
 #define CLIENTE_ENVIANDO_ARCHIVO 1
 #define SERVER_ENVIANDO_ARCHIVO 3
 #define CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES 2
+#define SERVIDOR_ENVIANDO_LISTA_DE_CLIENTES 4
+#define ENVIO_CANTIDAD_DE_CLIENTES 256
+
+
 
 #define TAMANIO_OPCION 64
 
@@ -119,12 +123,16 @@ void menu ()
 
 void optionDispatcher(int opcionMenu)
 {
+    char bufferOpcionPedirListado[TAMANIO_OPCION];
     switch(opcionMenu)
     {
     case GUI_ENVIAR_ARCHIVO:
         enviarArchivo();
         break;
     case GUI_PEDIR_LISTADO:
+        memset(bufferOpcionPedirListado, '\0', TAMANIO_OPCION);
+        sprintf(bufferOpcionPedirListado, "%d", CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES);
+        send (sock, bufferOpcionPedirListado, TAMANIO_OPCION, 0);
         break;
     }
 }
@@ -260,7 +268,8 @@ void *atenderPeticionDelServidor(void *argumentos)
     char mensaje[256];
     int opcionServer;
 
-    do {
+    do
+    {
         opcionServer = read_message(argumentosThread->socketDescriptorServer, TAMANIO_OPCION);
         printf("Me llego la opcion por parte del server %d\n", opcionServer);
         if(opcionServer == -1)
@@ -269,8 +278,9 @@ void *atenderPeticionDelServidor(void *argumentos)
             sprintf(mensaje, "Se cerro el servidor. Cerrando thread\n");
         else
             dispatchOpcionRecibida(opcionServer, argumentosThread->socketDescriptorServer);
+        logger(mensaje);
     }
-    while(opcionServer > -1);
+    while(opcionServer > 0);
     return NULL;
 }
 
@@ -286,9 +296,6 @@ int read_message(int socketDescriptorServer, int tamanioMensaje)
         result = recv(socketDescriptorServer, buffer, tamanioMensaje, 0);
     }
     while (result == -1 && errno == EINTR);
-
-    sprintf(mensajeLog, "read_message: Se leyo: %s y el result fue: %d\n", buffer, result);
-    logger(mensajeLog);
     retorno = (result > 0) ? atol(buffer) : result;
 }
 
@@ -296,16 +303,26 @@ int dispatchOpcionRecibida(int opcionServer, int socketServer)
 {
     long int tamanioArchivoRecibido;
     long int tamanioLeido = 0;
-    switch(opcionServer) {
-        case SERVER_ENVIANDO_ARCHIVO:
-            tamanioArchivoRecibido = read_message(socketServer, MSG_TAMANIO_ARCHIVO_SIZE);
-            tamanioLeido = read_Archivo(socketServer, tamanioArchivoRecibido);
-            printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
+    int i;
+    int cantCliente;
+    char bufferCliente[TAMANIO_OPCION];
+    switch(opcionServer)
+    {
+    case SERVER_ENVIANDO_ARCHIVO:
+        tamanioArchivoRecibido = read_message(socketServer, MSG_TAMANIO_ARCHIVO_SIZE);
+        tamanioLeido = read_Archivo(socketServer, tamanioArchivoRecibido);
+        printf("Cantidad leido %d, cantidad que deberia haber leido %d.\n", tamanioLeido, tamanioArchivoRecibido);
         break;
-        case CLIENTE_PIDIENDO_LISTADO_DE_CLIENTES:
-            //escribo opcion SERVIDOR_ENVIANDO_LISTA_CLIENTES
-            //escribo cantidad de clientes que hay en el conjunto
-            //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
+    case SERVIDOR_ENVIANDO_LISTA_DE_CLIENTES:
+        cantCliente = read_message(socketServer, ENVIO_CANTIDAD_DE_CLIENTES);
+        for (i = 0; i < cantCliente; i++)
+        {
+            recv(socketServer, bufferCliente, TAMANIO_OPCION, 0);
+            int cliente = atol(bufferCliente);
+            printf("%d\n", cliente);
+        }
+        //escribo cantidad de clientes que hay en el conjunto
+        //recorro el conjunto READSET y voy enviando socketDescriptor tras socketDescriptor
         break;
     }
 }
@@ -317,17 +334,39 @@ int read_Archivo(int socketDescriptorServer, int tamanioArchivo)
     int result;
     int cantidadTotalBytes = 0;
     int retorno;
+    int fd;
+    char nombreDeArchivoRecibido[256];
+    char rutaDestino[256];
+//    time_t tiempo = time(0);
+//    struct tm *tlocal = localtime(&tiempo);
+//    char fechaHora[128];
+//    strftime(fechaHora, 128, "%d/%m/%y-%H:%M:%S", tlocal);
+    memset(nombreDeArchivoRecibido, '\0', 256);
+    sprintf(nombreDeArchivoRecibido, "%d", getpid());
+    memset(rutaDestino, '\0', 256);
+    sprintf(rutaDestino, "/home/toti/Descargas/%d.txt", nombreDeArchivoRecibido);
+
+    if ((fd = open(rutaDestino, O_CREAT|O_APPEND|O_WRONLY, 0777)) == -1)
+    {
+        perror("Error al crear el archivo");
+        logger("Error al crear el archivo en destino");
+        return EXIT_FAILURE;
+    }
     printf("\t\tLeyendo Archivo\n");
     do
     {
         result = recv(socketDescriptorServer, buffer, FILE_BUFFER_SIZE, 0);
         cantidadTotalBytes += result;
+        if (write(fd, buffer, result) == -1)
+        {
+            printf("Error de escritura\n");
+            logger("Error al volcar a disco");
+            return EXIT_FAILURE;
+        }
         printf("%s", buffer);
     }
     while ((result == -1 && errno == EINTR) || ((cantidadTotalBytes < tamanioArchivo) && result != -1));
-    printf("\n");
-    sprintf(mensajeLog, "read_Archivo: Se leyo: %s y el result fue: %d\n", buffer, result);
-    logger(mensajeLog);
     retorno = (result > 0) ? cantidadTotalBytes : -1;
 }
+
 
